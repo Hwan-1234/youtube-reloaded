@@ -1,2 +1,4 @@
 /node_modules
 .emv
+/uploads
+.DB_Store

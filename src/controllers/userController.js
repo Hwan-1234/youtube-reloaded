@@ -1,4 +1,5 @@
 import User from "../models/User";
+import Video from "../models/Video";
 import fetch from "node-fetch";
 import bcrypt from "bcrypt";
 
@@ -110,18 +111,19 @@ export const finishGithubLogin = async (req, res) => {
       (email) => email.primary === true && email.verified === true
     );
     if (!emailObj) {
+      // set notification
       return res.redirect("/login");
     }
     let user = await User.findOne({ email: emailObj.email });
-    if(!user){
+    if (!user) {
       user = await User.create({
         avatarUrl: userData.avatar_url,
-        name:userData.name,
-        username:userData.login,
-        email:emailObj.email,
-        password:"",
+        name: userData.name,
+        username: userData.login,
+        email: emailObj.email,
+        password: "",
         socialOnly: true,
-        location:userData.location,
+        location: userData.location,
       });
     }
     req.session.loggedIn = true;
@@ -136,25 +138,17 @@ export const logout = (req, res) => {
   req.session.destroy();
   return res.redirect("/");
 };
-export const getEdit = (req, res) =>{
-  return res.render("edit-profile" , {pageTitle : "editProfile"});
+export const getEdit = (req, res) => {
+  return res.render("edit-profile", { pageTitle: "Edit Profile" });
 };
 export const postEdit = async (req, res) => {
   const {
     session: {
-      user: { _id , avatarUrl },
+      user: { _id, avatarUrl },
     },
     body: { name, email, username, location },
     file,
   } = req;
-  if (name !== req.session.user.name) {
-    const existsName = await User.exists({ name });
-    if (existsName) return res.status(400).redirect("/users/edit");
-  }
-  if (email !== req.session.user.email) {
-    const existsEmail = await User.exists({ email });
-    if (existsEmail) return res.status(400).redirect("/users/eidt");
-  }
   const updatedUser = await User.findByIdAndUpdate(
     _id,
     {
@@ -169,6 +163,7 @@ export const postEdit = async (req, res) => {
   req.session.user = updatedUser;
   return res.redirect("/users/edit");
 };
+
 export const getChangePassword = (req, res) => {
   if (req.session.user.socialOnly === true) {
     return res.redirect("/");
@@ -200,14 +195,17 @@ export const postChangePassword = async (req, res) => {
   await user.save();
   return res.redirect("/users/logout");
 };
+
 export const see = async (req, res) => {
   const { id } = req.params;
   const user = await User.findById(id);
   if (!user) {
     return res.status(404).render("404", { pageTitle: "User not found." });
   }
+  const videos = await Video.find({ owner: user._id });
   return res.render("users/profile", {
     pageTitle: user.name,
     user,
+    videos,
   });
 };
